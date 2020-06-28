@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.1)
 project(gperf)
 
 include(CheckCSourceCompiles)
+include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
 
 set(GPERF_VERSION_MAJOR 3)
@@ -73,11 +74,52 @@ target_include_directories(
 
 target_link_libraries(gperf PRIVATE gp)
 
-install(TARGETS	gperf RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(
+	TARGETS	gperf
+	EXPORT gperf
+	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
 
 #install(FILES doc/gperf.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
 #install(FILES doc/gperf.html DESTINATION ${CMAKE_INSTALL_DOCDIR})
 #install(FILES doc/gperf.info DESTINATION ${CMAKE_INSTALL_INFODIR})
+
+export(
+	TARGETS gperf
+	NAMESPACE gperf::
+	FILE ${CMAKE_CURRENT_BINARY_DIR}/gperf-export.cmake
+)
+
+configure_package_config_file(
+	gperf-config.cmake.in gperf-config.cmake
+	INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gperf-${GPERF_VERSION}
+)
+
+install(
+	FILES ${CMAKE_CURRENT_BINARY_DIR}/gperf-config.cmake
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gperf-${GPERF_VERSION}
+	COMPONENT development
+)
+
+write_basic_package_version_file(
+	${CMAKE_CURRENT_BINARY_DIR}/gperf-config-version.cmake
+	VERSION ${GPERF_VERSION}
+	COMPATIBILITY ExactVersion
+)
+
+install(
+	FILES ${CMAKE_CURRENT_BINARY_DIR}/gperf-config-version.cmake
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gperf-${GPERF_VERSION}
+	COMPONENT development
+)
+
+install(
+	EXPORT gperf
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/gperf-${GPERF_VERSION}
+	NAMESPACE gperf::
+	FILE gperf-export.cmake
+	COMPONENT development
+)
 
 configure_file(COPYING COPYING.txt COPYONLY)
 
