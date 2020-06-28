@@ -69,6 +69,8 @@ add_executable(
 	src/main.cc
 )
 
+add_executable(gperf::gperf ALIAS gperf)
+
 target_include_directories(
 	gperf
 	PRIVATE
