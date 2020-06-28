@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 
 project(gperf)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+
 include(CheckCSourceCompiles)
 include(CMakePackageConfigHelpers)
 include(GNUInstallDirs)
@@ -9,6 +11,8 @@ include(GNUInstallDirs)
 set(GPERF_VERSION_MAJOR 3)
 set(GPERF_VERSION_MINOR 1)
 set(GPERF_VERSION ${GPERF_VERSION_MAJOR}.${GPERF_VERSION_MINOR})
+
+option(GPERF_BUILD_DOCUMENTATION "Build documentation" OFF)
 
 set(PACKAGE_BUGREPORT "bug-gnu-gperf-antispam@gnu.org")
 set(PACKAGE_NAME "gperf")
@@ -80,9 +84,50 @@ install(
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
-#install(FILES doc/gperf.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
-#install(FILES doc/gperf.html DESTINATION ${CMAKE_INSTALL_DOCDIR})
-#install(FILES doc/gperf.info DESTINATION ${CMAKE_INSTALL_INFODIR})
+if(GPERF_BUILD_DOCUMENTATION)
+	find_package(Help2man REQUIRED)
+	find_package(Texinfo REQUIRED)
+	file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/doc)
+	add_custom_command(
+		OUTPUT doc/gperf.dvi
+		COMMAND texinfo::texi2dvi -o ${CMAKE_CURRENT_BINARY_DIR}/doc/gperf.dvi ${CMAKE_CURRENT_SOURCE_DIR}/doc/gperf.texi
+		DEPENDS doc/gperf.texi doc/gpl-3.0.texi
+	)
+	add_custom_target(dvi DEPENDS doc/gperf.dvi)
+	add_custom_command(
+		OUTPUT doc/gperf.html
+		COMMAND texinfo::texi2html -o ${CMAKE_CURRENT_BINARY_DIR}/doc/gperf.html ${CMAKE_CURRENT_SOURCE_DIR}/doc/gperf.texi
+		DEPENDS doc/gperf.texi doc/gpl-3.0.texi
+	)
+	add_custom_command(
+		OUTPUT doc/gperf_toc.html
+		COMMAND texinfo::texi2html -o ${CMAKE_CURRENT_BINARY_DIR}/doc -number -split_chapter ${CMAKE_CURRENT_SOURCE_DIR}/doc/gperf.texi
+		DEPENDS doc/gperf.texi doc/gpl-3.0.texi
+	)
+	add_custom_target(html DEPENDS doc/gperf.html doc/gperf_toc.html)
+	add_custom_command(
+		OUTPUT doc/gperf.info
+		COMMAND texinfo::makeinfo -o ${CMAKE_CURRENT_BINARY_DIR}/doc/gperf.info --no-split ${CMAKE_CURRENT_SOURCE_DIR}/doc/gperf.texi
+		DEPENDS doc/gperf.texi doc/gpl-3.0.texi
+	)
+	add_custom_target(info DEPENDS doc/gperf.info)
+	add_custom_command(
+		OUTPUT doc/gperf.1
+		COMMAND help2man::help2man --name='generate a perfect hash function from a key set' -o ${CMAKE_CURRENT_BINARY_DIR}/doc/gperf.1 $<TARGET_FILE:gperf>
+		DEPENDS doc/gperf.texi doc/gpl-3.0.texi
+	)
+	add_custom_target(man DEPENDS doc/gperf.1)
+	add_custom_command(
+		OUTPUT doc/gperf.pdf
+		COMMAND texinfo::texi2pdf -o ${CMAKE_CURRENT_BINARY_DIR}/doc/gperf.pdf ${CMAKE_CURRENT_SOURCE_DIR}/doc/gperf.texi
+		DEPENDS doc/gperf.texi doc/gpl-3.0.texi
+	)
+	add_custom_target(pdf DEPENDS doc/gperf.pdf)
+	add_custom_target(doc ALL DEPENDS html info man)
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/doc/gperf.html DESTINATION ${CMAKE_INSTALL_DOCDIR})
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/doc/gperf.info DESTINATION ${CMAKE_INSTALL_INFODIR})
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/doc/gperf.1 DESTINATION ${CMAKE_INSTALL_MANDIR}/man1)
+endif()
 
 export(
 	TARGETS gperf
